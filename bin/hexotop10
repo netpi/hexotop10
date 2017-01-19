@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+
+
+var getContent  = require('../lib/getMD').getContent
+var getSummary  = require('../lib/getMD').getSummary
+var fs  = require('fs')
+var co  = require('co')
+var argv = require("minimist")(process.argv.slice(2));
+var opt = {};
+opt.url = argv._[0];
+
+var template = fs.readFileSync(__dirname+'/../template/hexo.md')
+
+function formatDateTime (date) {      
+    var y = date.getFullYear();  
+    var m = date.getMonth() + 1;  
+    m = m < 10 ? ('0' + m) : m;  
+    var d = date.getDate();  
+    d = d < 10 ? ('0' + d) : d;  
+    var h = date.getHours();  
+    var minute = date.getMinutes();  
+    minute = minute < 10 ? ('0' + minute) : minute;  
+    return y + '-' + m + '-' + d+' '+h+':'+minute;  
+}
+function* output(){
+    content = yield getContent(opt)
+    summary = yield getSummary(opt)    
+    var hexomd =  template.toString()
+    .replace('{title}',summary.title)
+    .replace('{date}',formatDateTime(new Date()))
+    .replace('{mainpic}',summary.mainpic)
+    .replace('{desc}',summary.desc)
+    .replace('{content}',content)
+    fs.writeFileSync('./source/_posts/'+summary.title+'.md',hexomd)    
+}
+co(output())
+.catch(function(e){
+    throw new Error(e)
+})
